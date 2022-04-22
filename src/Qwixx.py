@@ -330,13 +330,9 @@ class Qwixx:
             if self.enabled_colors[color]
         }
 
-        print(roll)
-
         # Roll the white dice
         white1 = self.dice["White1"].roll_die()
         white2 = self.dice["White2"].roll_die()
-
-        print(f"White dice: {white1} and {white2}")
 
         # Save all possible dice combinations
         combinations = {"White": [white1 + white2]}

@@ -4,7 +4,12 @@ class ScoreRow:
         self.closed = False
 
         # Create a new empty row for the score sheet
-        self.values = {x: False for x in range(2, 13)}
+        # Inverted row for green and blue colors
+        if color == "Green" or color == "Blue":
+            self.values = {x: False for x in range(12, 1, -1)}
+        else:
+            self.values = {x: False for x in range(2, 13)}
+        
 
     def __str__(self):
         row = ""
@@ -45,15 +50,19 @@ class ScoreRow:
 
     def is_allowed(self, value):
         # Find the latest value in the row that is True
-        latest_value = 1
+        latest_index = 0
         for key, v in self.values.items():
             if v:
-                latest_value = key
+                latest_index += 1
 
-        if value == 12 and sum(self.values.values()) < 5:
+        values = list(self.values)
+
+        if value == values[-1] and sum(self.values.values()) < 5:
             return False
 
-        if value > latest_value and not self.closed:
+        index = values.index(value)
+
+        if index > latest_index and not self.closed:
             return True
         else:
             return False
@@ -62,7 +71,7 @@ class ScoreRow:
         if self.is_allowed(value):
             self.values[value] = True
 
-            if value == 12:
+            if value == list(self.values)[-1]:
                 self.closed = True
 
             return True
