@@ -213,9 +213,9 @@ class Qwixx:
                 colored_number = int(split_number[1])
 
             if action == 3:
-                if white_color == colored_color and colored_number <= white_number:
+                if white_color == colored_color and ((colored_number <= white_number and (colored_color == "Red" or colored_color == "Yellow")) or (colored_number >= white_number and (colored_color == "Green" or colored_color == "Blue"))):
                     print(
-                        "This is not possible since the white number goes first and the colored number is lower than or equal to the white number.\n"
+                        "This is not possible since the white number goes first and the colored number comes after the white number.\n"
                     )
                     continue
 

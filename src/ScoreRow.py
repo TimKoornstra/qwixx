@@ -115,9 +115,11 @@ class ScoreRow:
 
         # Find the index of the latest value in the row that is True
         latest_index = 0
-        for key, v in self.values.items():
+        i = 0
+        for _, v in self.values.items():
             if v:
-                latest_index += 1
+                latest_index = i
+            i += 1
 
         values = list(self.values)
 
@@ -126,7 +128,7 @@ class ScoreRow:
             return False
 
         index = values.index(value)
-
+        
         # If the index of the value is greater than the index of the latest value in the row that is True and the row is not closed
         if index > latest_index and not self.closed:
             return True
