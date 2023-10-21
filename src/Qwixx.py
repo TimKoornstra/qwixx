@@ -238,6 +238,28 @@ class Qwixx:
         if self.is_game_over():
             return
 
+        # Let the other players mark the score sheet using the white dice
+        self.other_players(player_number, roll, closed_rows)
+
+    def other_players(self, player_number: int, roll: dict, closed_rows: list)\
+            -> None:
+        """
+        Let the other players mark the score sheet using the white dice.
+
+        Parameters
+        ----------
+        player_number : int
+            The player number.
+        roll : dict
+            The dictionary of the rolled dice.
+        closed_rows : list
+            The list of the closed rows.
+
+        Returns
+        -------
+        None
+        """
+
         # Ask the other players to mark the score sheet using the white dice
         for i in range(self.n_players):
             print("------------------------------------------------------")
