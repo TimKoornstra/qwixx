@@ -65,6 +65,7 @@ class Qwixx:
         -------
         None
         """
+
         # Random start player
         current_player = random.randint(0, self.n_players - 1)
 
@@ -150,11 +151,6 @@ class Qwixx:
 
         # Ask the player to choose a combination
         while True:
-            white_color = None
-            white_number = None
-            colored_color = None
-            colored_number = None
-
             print(f"{self.players[player_number].name}, choose an action: ")
             try:
                 action = int(
@@ -165,62 +161,21 @@ class Qwixx:
                         "colored dice\n4. Add a failed attempt\n"
                     )
                 )
+                if action not in [1, 2, 3, 4]:
+                    raise ValueError
             except ValueError:
                 print("Invalid input.")
-                continue
-            if action not in [1, 2, 3, 4]:
-                print("Invalid choice. Try again.\n")
                 continue
 
             print()
 
-            if action == 1 or action == 3:
-                # Mark the score sheet using the white dice
-                white_combo = input(
-                    "Choose a combination that uses the white dice:\n")
-                split_number = white_combo.split(" ")
+            result = self.process_action_choice(
+                action, white_combos, colored_combos)
 
-                if (
-                    split_number[0] not in white_combos.keys()
-                    or int(split_number[1]) not in
-                    white_combos[split_number[0]]
-                ):
-                    print("Invalid choice. Try again.\n")
-                    continue
+            if result is None:
+                continue
 
-                white_color = split_number[0]
-                white_number = int(split_number[1])
-
-            if action == 2 or action == 3:
-                # Mark the score sheet using the colored dice
-                colored_combo = input(
-                    "Choose a combination that uses the colored dice:\n"
-                )
-                split_number = colored_combo.split(" ")
-
-                if (
-                    split_number[0] not in colored_combos.keys()
-                    or int(split_number[1]) not in
-                    colored_combos[split_number[0]]
-                ):
-                    print("Invalid choice. Try again.\n")
-                    continue
-
-                colored_color = split_number[0]
-                colored_number = int(split_number[1])
-
-            if action == 3:
-                if white_color == colored_color and \
-                    ((colored_number <= white_number and
-                      (colored_color == "Red" or colored_color == "Yellow"))
-                        or (colored_number >= white_number and
-                     (colored_color == "Green" or colored_color == "Blue"))):
-                    print(
-                        "This is not possible since the white number goes "
-                        "first and the colored number comes after the white "
-                        "number.\n"
-                    )
-                    continue
+            white_color, white_number, colored_color, colored_number = result
 
             closed_rows = self.play_action(
                 int(action),
@@ -239,10 +194,86 @@ class Qwixx:
             return
 
         # Let the other players mark the score sheet using the white dice
-        self.other_players(player_number, roll, closed_rows)
+        self.prompt_other_players(player_number, roll, closed_rows)
 
-    def other_players(self, player_number: int, roll: dict, closed_rows: list)\
-            -> None:
+    def get_combo_input(self, description: str, valid_combos: dict) -> tuple:
+        """
+        Get the input for a combination.
+
+        Parameters
+        ----------
+        description : str
+            The description of the combination.
+        valid_combos : dict
+            The dictionary of the allowed combinations.
+
+        Returns
+        -------
+        str, int
+            The chosen color and number.
+        """
+
+        combo = input(description)
+        split_combo = combo.split(" ")
+
+        if split_combo[0] not in valid_combos.keys() or int(split_combo[1]) \
+                not in valid_combos[split_combo[0]]:
+            print("Invalid choice. Try again.\n")
+            return None, None
+
+        return split_combo[0], int(split_combo[1])
+
+    def process_action_choice(self, action: int, white_combos: dict,
+                              colored_combos: dict) -> tuple:
+        """
+        Process the action choice.
+
+        Parameters
+        ----------
+        action : int
+            The action to be processed.
+        white_combos : dict
+            The dictionary of the allowed white combinations.
+        colored_combos : dict
+            The dictionary of the allowed colored combinations.
+
+        Returns
+        -------
+        tuple
+            The tuple of the chosen white color, white number, colored color,
+            and colored number.
+        """
+
+        white_color, white_number, colored_color, colored_number = \
+            None, None, None, None
+
+        if action in [1, 3]:
+            white_color, white_number = self.get_white_combo(white_combos)
+            if white_color is None:
+                return None
+
+        if action in [2, 3]:
+            colored_color, colored_number = self.get_combo_input(
+                "Choose a combination that uses the colored dice:\n",
+                colored_combos)
+            if colored_color is None:
+                return None
+
+        if action == 3:
+            if white_color == colored_color and \
+                ((colored_number <= white_number and colored_color in
+                  ["Red", "Yellow"]) or
+                    (colored_number >= white_number and colored_color in
+                     ["Green", "Blue"])):
+                print(
+                    "This is not possible since the white number goes first "
+                    "and the colored number comes after the white number.\n")
+                return None
+
+        return white_color, white_number, colored_color, colored_number
+
+    def prompt_other_players(self, player_number: int, roll: dict,
+                             closed_rows: list) -> None:
         """
         Let the other players mark the score sheet using the white dice.
 
@@ -264,11 +295,11 @@ class Qwixx:
         for i in range(self.n_players):
             print("------------------------------------------------------")
 
-            if i is not player_number:
+            if i != player_number:
                 # List the possible white combinations
                 white_combos, _ = self.allowed_combinations(roll, i)
 
-                if len(white_combos) == 0:
+                if not white_combos:
                     print(
                         f"{self.players[i].name} cannot mark the score sheet "
                         "using the white dice."
@@ -281,47 +312,76 @@ class Qwixx:
                 )
 
                 print(self.players[i])
-                print()
-                print("Your possible choices: ")
+                print("\nYour possible choices: ")
                 self.print_roll(white_combos)
 
                 # Ask the player to choose a combination
-                while True:
-                    want_to = input(
-                        "Would you like to mark the score sheet using the "
-                        "white dice? (y/n)\n"
-                    )
-                    if want_to.lower() == "y":
-                        white_combo = input(
-                            "Choose a combination that uses the white dice:\n"
-                        )
-                        split_number = white_combo.split(" ")
+                color, number = self.ask_player_action(
+                    self.players[i], white_combos)
 
-                        if (
-                            split_number[0] not in white_combos.keys()
-                            or int(split_number[1]) not in
-                            white_combos[split_number[0]]
-                        ):
-                            print("Invalid choice. Try again.\n")
-                            continue
-
-                        self.play_action(
-                            1, i, split_number[0], int(
-                                split_number[1]), None, None
-                        )
-                        break
-
-                    elif want_to.lower() == "n":
-                        break
-                    else:
-                        print("Invalid choice. Try again.\n")
-                        continue
+                if color is not None:
+                    self.play_action(1, i, color, number, None, None)
 
                 # If the first player "closed" a row, close it for the other
                 # players
                 if closed_rows:
                     for row in closed_rows:
                         self.players[i].rows[row].closed = True
+
+    def get_white_combo(self, white_combos: dict) -> tuple:
+        """
+        Get the input for a white combination.
+
+        Parameters
+        ----------
+        white_combos : dict
+            The dictionary of the allowed white combinations.
+
+        Returns
+        -------
+        str, int
+            The chosen color and number.
+        """
+
+        white_combo = input("Choose a combination that uses the white dice:\n")
+        split_combo = white_combo.split(" ")
+
+        if split_combo[0] not in white_combos.keys() or int(split_combo[1]) \
+                not in white_combos[split_combo[0]]:
+            print("Invalid choice. Try again.\n")
+            return None, None
+
+        return split_combo[0], int(split_combo[1])
+
+    def ask_player_action(self, player: ScoreSheet, white_combos: dict):
+        """
+        Ask the player to choose an action.
+
+        Parameters
+        ----------
+        player : ScoreSheet
+            The player.
+        white_combos : dict
+            The dictionary of the allowed white combinations.
+
+        Returns
+        -------
+        str, int
+            The chosen color and number.
+        """
+
+        while True:
+            want_to = input(
+                "Would you like to mark the score sheet using the white dice? "
+                "(y/n)\n")
+            if want_to.lower() == "y":
+                color, number = self.get_white_combo(white_combos)
+                if color is not None:
+                    return color, number
+            elif want_to.lower() == "n":
+                return None, None
+            else:
+                print("Invalid choice. Try again.\n")
 
     def is_game_over(self) -> bool:
         """Checks if the game has ended based on game rules."""
