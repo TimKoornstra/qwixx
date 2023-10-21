@@ -1,81 +1,49 @@
-from ScoreRow import *
+from ScoreRow import ScoreRow
+
 
 class ScoreSheet:
     """
-    A class for the score sheet (a player).
+    A class representing a player's score sheet in the Qwixx game.
 
     Attributes
     ----------
     name : str
         The name of the player.
-    rows : dict
-        A dictionary of ScoreRow objects.
+    rows : dict[str, ScoreRow]
+        A dictionary of ScoreRow objects representing each colored row.
     failed_attempts : int
         The number of failed attempts.
-    
-    Methods
-    -------
-    __str__()
-        Returns a string representation of the score sheet.
-    mark_row(row_name : str, value : int)
-        Marks the row with the given value.
-    add_failed_attempt()
-        Adds a failed attempt to the score sheet.
-    calculate_score()
-        Calculates the total score of the score sheet.    
     """
 
-    def __init__(self, player_name):
-        """
-        A constructor for the ScoreSheet class.
-
-        Parameters
-        ----------
-        player_name : str
-            The name of the player.
-        
-        Returns
-        -------
-        None
-        """
-
+    def __init__(self, player_name: str):
         self.name = player_name
-
-        # Create 4 rows for the score sheet
         self.rows = {
             "Red": ScoreRow("Red"),
             "Yellow": ScoreRow("Yellow"),
             "Green": ScoreRow("Green"),
             "Blue": ScoreRow("Blue"),
         }
-
-        # Counter for failed attempts
         self.failed_attempts = 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
-        Returns a string representation of the score sheet.
+        Returns a string representation of the ScoreSheet.
 
         Returns
         -------
         str
-            A string representation of the score sheet.
+            A string representation of the ScoreSheet.
         """
-
         title = f"{self.name}'s Score Sheet\n"
-        seperation = "=" * 45 + "\n"
-        rows = ""
-        for row in self.rows.values():
-            rows += str(row) + "\n"
-
+        separation = "=" * 45 + "\n"
+        rows = "\n".join([str(row) for row in self.rows.values()])
         failed = f"Failed attempts: {self.failed_attempts}\n"
         total = f"Total score: {self.calculate_score()}"
+        return title + separation + rows + "\n" + separation + failed + total
 
-        return title + seperation + rows + seperation + failed + total
-
-    def mark_row(self, row_name : str, value : int):
+    def mark_row(self, row_name: str, value: int) -> bool:
         """
-        Marks the row with the given value.
+        Marks the specified row with the given value if allowed.
 
         Parameters
         ----------
@@ -86,32 +54,23 @@ class ScoreSheet:
 
         Returns
         -------
-        None
+        bool
+            True if the marking was successful, False otherwise.
         """
-        # Mark the row with the given value
-        self.rows[row_name].fill_in_number(value)
+        return self.rows[row_name].fill_in_number(value)
 
-    def add_failed_attempt(self):
-        """
-        Adds a failed attempt to the score sheet.
-
-        Returns
-        -------
-        None
-        """
+    def add_failed_attempt(self) -> None:
+        """Increments the number of failed attempts by 1."""
         self.failed_attempts += 1
 
-    def calculate_score(self):
+    def calculate_score(self) -> int:
         """
-        Calculates the total score of the score sheet.
+        Calculates the total score based on the rows and failed attempts.
 
         Returns
         -------
         int
-            The total score of the score sheet.
+            The total score.
         """
-
-        return (
-            sum(row.calculate_score() for row in self.rows.values())
-            + self.failed_attempts * -5
-        )
+        return sum(row.calculate_score() for row in self.rows.values()) \
+            - (self.failed_attempts * 5)

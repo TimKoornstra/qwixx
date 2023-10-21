@@ -2,68 +2,47 @@ class ScoreRow:
     """
     A class for a row in the score sheet.
 
-    Parameters
+    Attributes
     ----------
     color : str
         The color of the row.
-    
-    Methods
-    -------
-    __str__()
-        Returns a string representation of the row.
-    is_allowed(value : int)
-        Returns True if the value is allowed in the row.
-    fill_in_number(value : int)
-        Fills in the given value in the row.
-    calculate_score()
-        Calculates the score of the row.    
+    closed : bool
+        Indicates if the row is closed.
+    values : dict[int, bool]
+        Represents the numbers in the row and their statuses.
     """
 
-    def __init__(self, color : str):
+    def __init__(self, color: str):
         """
-        A constructor for the ScoreRow class.
+        Initialize the ScoreRow.
 
         Parameters
         ----------
         color : str
             The color of the row.
-        
-        Returns
-        -------
-        None
         """
-
         self.color = color
         self.closed = False
 
-        # Create a new empty row for the score sheet
-        # Inverted row for green and blue colors
-        if color == "Green" or color == "Blue":
+        if color in ["Green", "Blue"]:
             self.values = {x: False for x in range(12, 1, -1)}
         else:
             self.values = {x: False for x in range(2, 13)}
-        
-    def __str__(self):
+
+    def __str__(self) -> str:
         """
-        Returns a string representation of the row.
+        Returns a string representation of the ScoreRow.
 
         Returns
         -------
         str
-            A string representation of the row.
+            A string representation of the ScoreRow.
         """
-       
-        row = ""
-        for value in self.values:
-            if self.values[value]:
-                row += f"({value})"
-            else:
-                row += f" {value} "
-            row += "-"
+        row = "".join([f"({value})" if self.values[value]
+                      else f" {value} " for value in self.values])
+        return f"Color: {self.color}\n{row}\nScore: {self.calculate_score()}"
 
-        return f"Color: {self.color}\n{row[:-1]} \nScore: {self.calculate_score()}"
-
-    def calculate_score(self):
+    def calculate_score(self) -> int:
         """
         Calculates the score of the row.
 
@@ -72,89 +51,71 @@ class ScoreRow:
         int
             The score of the row.
         """
+        count = sum(self.values.values())
+        score = count * (count + 1) // 2
 
-        # Count the number of True values in the values dictionary
-        amount_in_row = sum(self.values.values())
-        score_lookup = {
-            0: 0,
-            1: 1,
-            2: 3,
-            3: 6,
-            4: 10,
-            5: 15,
-            6: 21,
-            7: 28,
-            8: 36,
-            9: 45,
-            10: 55,
-            11: 66,
-            12: 78,
-            13: 91,
-        }
+        # Add an extra point if the row is locked and has at least 5 crosses
+        if self.closed and count >= 5:
+            score += 1
 
-        return score_lookup[
-            amount_in_row + 1
-            if amount_in_row >= 5 and self.values[12] == True
-            else amount_in_row
-        ]
+        return score
 
-    def is_allowed(self, value : int):
+    def is_allowed(self, value: int) -> bool:
         """
-        Checks if the given value is allowed in the row.
+        Checks if the given value is allowed to be marked in the row.
 
         Parameters
         ----------
         value : int
-            The value to check.
-        
+            The value to be checked.
+
         Returns
         -------
         bool
-            True if the value is allowed in the row.
+            True if the value is allowed to be marked in the row, False
+            otherwise.
         """
-
-        # Find the index of the latest value in the row that is True
-        latest_index = 0
-        i = 0
-        for _, v in self.values.items():
-            if v:
-                latest_index = i
-            i += 1
-
-        values = list(self.values)
-
-        # If the value is the latest value in the row and the amount of True values in the row is less than 5
-        if value == values[-1] and sum(self.values.values()) < 5:
+        # If the value is already marked or the row is closed, it's not allowed
+        if value in self.values and self.values[value] or self.closed:
             return False
 
-        index = values.index(value)
-        
-        # If the index of the value is greater than the index of the latest value in the row that is True and the row is not closed
-        if index > latest_index and not self.closed:
+        latest_filled_value = next((v for v in reversed(
+            self.values.keys()) if self.values[v]), None)
+
+        # If no value has been marked yet, then the given value is allowed
+        if latest_filled_value is None:
             return True
-        else:
-            return False
 
-    def fill_in_number(self, value : int):
+        # For Red and Yellow rows, the next value should be greater than the
+        # latest filled value
+        if self.color in ["Red", "Yellow"]:
+            return value > latest_filled_value
+
+        # For Green and Blue rows, the next value should be smaller than the
+        # latest filled value
+        if self.color in ["Green", "Blue"]:
+            return value < latest_filled_value
+
+        return False
+
+    def fill_in_number(self, value: int) -> bool:
         """
-        Fills in the given value in the row.
+        Marks the given value in the row.
 
         Parameters
         ----------
         value : int
-            The value to fill in.
-            
+            The value to be marked in the row.
+
         Returns
         -------
-        None
+        bool
+            True if the value is marked in the row, False otherwise.
         """
-
         if self.is_allowed(value):
             self.values[value] = True
 
             if value == list(self.values)[-1]:
                 self.closed = True
-
             return True
-        else:
-            return False
+        return False

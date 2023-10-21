@@ -1,5 +1,8 @@
-from Die import *
-from ScoreSheet import *
+from Die import Die
+from ScoreSheet import ScoreSheet
+
+import random
+
 
 class Qwixx:
     """
@@ -8,67 +11,51 @@ class Qwixx:
     Attributes
     ----------
     n_players : int
-        the number of players in the game.
-    *player_names : list
-        the names of the players in the game.
-
-    Methods
-    -------
-    play()
-        Play the game.
-    turn(player_number : int)
-        Play a turn for the player with the given number.
-    is_game_over()
-        Check if the game is over.
-    play_action(choice : int, player_number : int, white_color : str = None, white_number : str = None, colored_color : str = None, colored_number: str = None)
-        Play an action for the player with the given number.
-    roll_dice()
-        Roll the dice of the enabled colors.
-    allowed_combinations(roll : dict, player_number : int)
-        Return all possible dice combinations for a roll.
-    print_roll(roll : dict)
-        Print the roll.
+        The number of players in the game.
+    players : List[ScoreSheet]
+        The score sheets of the players in the game.
+    dice : Dict[str, Die]
+        The dice used in the game, mapped by color.
+    enabled_colors : Dict[str, bool]
+        Indicates which colors are still active in the game.
     """
 
-    def __init__(self, n_players:int, *player_names):
+    def __init__(self, n_players: int, *player_names: str):
         """
-        Constructor for the Qwixx class.
+        Initializes a Qwixx game.
 
         Parameters
         ----------
         n_players : int
-            the number of players in the game.
-        *player_names : list
-            the names of the players in the game.
+            Number of players in the game.
+        *player_names : str
+            Names of the players.
+
+        Raises
+        ------
+        ValueError
+            If the number of players does not match the number of names
+            provided.
         """
 
-        if len(player_names) > 0 and len(player_names) is not n_players:
+        if player_names and len(player_names) != n_players:
             raise ValueError(
-                "Number of players must match the number of names provided."
-            )
+                "Number of players must match the number of names provided.")
 
-        # Initialize the game components
         self.n_players = n_players
-
-        # Create a new empty score sheet for each player
-        self.players = (
-            [ScoreSheet(name) for name in player_names]
-            if player_names
-            else [ScoreSheet(f"Player {i}") for i in range(1, n_players + 1)]
-        )
-
-        # Create a new empty die for each color and two white dice
+        self.players = [ScoreSheet(name) for name in player_names] if \
+            player_names else [ScoreSheet(f"Player {i+1}") for i in
+                               range(n_players)]
         self.dice = {
             "Red": Die("Red"),
             "Yellow": Die("Yellow"),
             "Green": Die("Green"),
             "Blue": Die("Blue"),
             "White1": Die("White"),
-            "White2": Die("White"),
+            "White2": Die("White")
         }
-
-        # Keep track of which colors are enabled
-        self.enabled_colors = {"Red": True, "Yellow": True, "Green": True, "Blue": True}
+        self.enabled_colors = {"Red": True, "Yellow": True,
+                               "Green": True, "Blue": True}
 
     def play(self):
         """
@@ -101,11 +88,12 @@ class Qwixx:
             scores[player.name] = player.calculate_score()
 
         # Sort the scores in descending order
-        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        sorted_scores = sorted(
+            scores.items(), key=lambda x: x[1], reverse=True)
 
         print()
         # Print the scores
-        print(f"Scores:")
+        print("Scores:")
         for name, score in sorted_scores:
             print(f"{name}: {score}")
 
@@ -138,17 +126,20 @@ class Qwixx:
         roll = self.roll_dice()
 
         # Let the current player go first
-        white_combos, colored_combos = self.allowed_combinations(roll, player_number)
+        white_combos, colored_combos = self.allowed_combinations(
+            roll, player_number)
 
         # Print the allowed white combinations
         print(
-            f"{self.players[player_number].name} can mark the following using the white dice: "
+            f"{self.players[player_number].name} can mark the following using "
+            "the white dice: "
         )
         self.print_roll(white_combos)
 
         # Print the allowed combinations
         print(
-            f"{self.players[player_number].name} can mark the following using other combinations: "
+            f"{self.players[player_number].name} can mark the following using "
+            "other combinations: "
         )
         self.print_roll(colored_combos)
 
@@ -168,7 +159,10 @@ class Qwixx:
             try:
                 action = int(
                     input(
-                        "1. Mark the score sheet using the white dice\n2. Mark the score sheet using the colored dice\n3. Mark the score sheet with the white dice followed by the colored dice\n4. Add a failed attempt\n"
+                        "1. Mark the score sheet using the white dice\n2. "
+                        "Mark the score sheet using the colored dice\n3. Mark "
+                        "the score sheet with the white dice followed by the "
+                        "colored dice\n4. Add a failed attempt\n"
                     )
                 )
             except ValueError:
@@ -182,12 +176,14 @@ class Qwixx:
 
             if action == 1 or action == 3:
                 # Mark the score sheet using the white dice
-                white_combo = input("Choose a combination that uses the white dice:\n")
+                white_combo = input(
+                    "Choose a combination that uses the white dice:\n")
                 split_number = white_combo.split(" ")
 
                 if (
                     split_number[0] not in white_combos.keys()
-                    or int(split_number[1]) not in white_combos[split_number[0]]
+                    or int(split_number[1]) not in
+                    white_combos[split_number[0]]
                 ):
                     print("Invalid choice. Try again.\n")
                     continue
@@ -204,7 +200,8 @@ class Qwixx:
 
                 if (
                     split_number[0] not in colored_combos.keys()
-                    or int(split_number[1]) not in colored_combos[split_number[0]]
+                    or int(split_number[1]) not in
+                    colored_combos[split_number[0]]
                 ):
                     print("Invalid choice. Try again.\n")
                     continue
@@ -213,9 +210,15 @@ class Qwixx:
                 colored_number = int(split_number[1])
 
             if action == 3:
-                if white_color == colored_color and ((colored_number <= white_number and (colored_color == "Red" or colored_color == "Yellow")) or (colored_number >= white_number and (colored_color == "Green" or colored_color == "Blue"))):
+                if white_color == colored_color and \
+                    ((colored_number <= white_number and
+                      (colored_color == "Red" or colored_color == "Yellow"))
+                        or (colored_number >= white_number and
+                     (colored_color == "Green" or colored_color == "Blue"))):
                     print(
-                        "This is not possible since the white number goes first and the colored number comes after the white number.\n"
+                        "This is not possible since the white number goes "
+                        "first and the colored number comes after the white "
+                        "number.\n"
                     )
                     continue
 
@@ -245,23 +248,26 @@ class Qwixx:
 
                 if len(white_combos) == 0:
                     print(
-                        f"{self.players[i].name} cannot mark the score sheet using the white dice."
+                        f"{self.players[i].name} cannot mark the score sheet "
+                        "using the white dice."
                     )
                     continue
 
                 print(
-                    f"{self.players[i].name}, you can mark the score sheet using the white dice\n"
+                    f"{self.players[i].name}, you can mark the score sheet "
+                    "using the white dice\n"
                 )
 
                 print(self.players[i])
                 print()
-                print(f"Your possible choices: ")
+                print("Your possible choices: ")
                 self.print_roll(white_combos)
 
                 # Ask the player to choose a combination
                 while True:
                     want_to = input(
-                        f"Would you like to mark the score sheet using the white dice? (y/n)\n"
+                        "Would you like to mark the score sheet using the "
+                        "white dice? (y/n)\n"
                     )
                     if want_to.lower() == "y":
                         white_combo = input(
@@ -271,13 +277,15 @@ class Qwixx:
 
                         if (
                             split_number[0] not in white_combos.keys()
-                            or int(split_number[1]) not in white_combos[split_number[0]]
+                            or int(split_number[1]) not in
+                            white_combos[split_number[0]]
                         ):
                             print("Invalid choice. Try again.\n")
                             continue
 
                         self.play_action(
-                            1, i, split_number[0], int(split_number[1]), None, None
+                            1, i, split_number[0], int(
+                                split_number[1]), None, None
                         )
                         break
 
@@ -287,47 +295,26 @@ class Qwixx:
                         print("Invalid choice. Try again.\n")
                         continue
 
-                # If the first player "closed" a row, close it for the other players
+                # If the first player "closed" a row, close it for the other
+                # players
                 if closed_rows:
                     for row in closed_rows:
                         self.players[i].rows[row].closed = True
 
-    def is_game_over(self):
-        """
-        Check if the game is over.
-
-        Returns
-        -------
-        bool
-            True if the game is over, False otherwise.
-        """
-
-        # Check if the game is over
-        # Game is over if one player has 4 failed attempts or if two colors are disabled
-
-        for player in self.players:
-            if player.failed_attempts >= 4:
-                return True
-
-        # Count the number of enabled colors
-        enabled_colors = 0
-        for color in self.enabled_colors:
-            if self.enabled_colors[color]:
-                enabled_colors += 1
-
-        if enabled_colors <= 2:
+    def is_game_over(self) -> bool:
+        """Checks if the game has ended based on game rules."""
+        if any(player.failed_attempts >= 4 for player in self.players):
             return True
-
-        return False
+        return sum(self.enabled_colors.values()) <= 2
 
     def play_action(
         self,
         choice: int,
         player_number: int,
-        white_color: str=None,
-        white_number: int=None,
-        colored_color: str=None,
-        colored_number: int=None,
+        white_color: str = None,
+        white_number: int = None,
+        colored_color: str = None,
+        colored_number: int = None,
     ):
         """
         Play an action.
@@ -359,7 +346,8 @@ class Qwixx:
                 raise ValueError("No white dice combination was provided.")
             self.players[player_number].mark_row(white_color, white_number)
             print(
-                f"{self.players[player_number].name} marked the score sheet using the white dice {white_color} {white_number}."
+                f"{self.players[player_number].name} marked the score sheet "
+                f"using the white dice {white_color} {white_number}."
             )
 
             # Print if the row is closed
@@ -374,7 +362,8 @@ class Qwixx:
 
             self.players[player_number].mark_row(colored_color, colored_number)
             print(
-                f"{self.players[player_number].name} marked the score sheet using the colored dice {colored_color} {colored_number}."
+                f"{self.players[player_number].name} marked the score sheet "
+                "using the colored dice {colored_color} {colored_number}."
             )
 
             # Print if the row is closed
@@ -382,7 +371,8 @@ class Qwixx:
                 print(f"The {colored_color.lower()} row is now closed!")
                 return [colored_color]
 
-        # Option 3: Mark the score sheet with the white dice followed by the colored dice
+        # Option 3: Mark the score sheet with the white dice followed by the
+        # colored dice
         elif choice == 3:
             if colored_color is None or colored_number is None:
                 raise ValueError("Color and number must be provided.")
@@ -392,7 +382,9 @@ class Qwixx:
             self.players[player_number].mark_row(white_color, white_number)
             self.players[player_number].mark_row(colored_color, colored_number)
             print(
-                f"{self.players[player_number].name} marked the score sheet using the white dice {white_color} {white_number} and the colored dice {colored_color} {colored_number}."
+                f"{self.players[player_number].name} marked the score sheet "
+                f"using the white dice {white_color} {white_number} and the "
+                f"colored dice {colored_color} {colored_number}."
             )
 
             closed_colors = []
@@ -409,7 +401,8 @@ class Qwixx:
         # Option 4: Adding a failed attempt
         elif choice == 4:
             self.players[player_number].add_failed_attempt()
-            print(f"{self.players[player_number].name} added a failed attempt.")
+            print(
+                f"{self.players[player_number].name} added a failed attempt.")
 
     def roll_dice(self):
         """
@@ -423,14 +416,14 @@ class Qwixx:
 
         # Roll the dice of the enabled colors
         roll = {
-            color: self.dice[color].roll_die()
+            color: self.dice[color].roll()
             for color in self.enabled_colors
             if self.enabled_colors[color]
         }
 
         # Roll the white dice
-        white1 = self.dice["White1"].roll_die()
-        white2 = self.dice["White2"].roll_die()
+        white1 = self.dice["White1"].roll()
+        white2 = self.dice["White2"].roll()
 
         # Save all possible dice combinations
         combinations = {"White": [white1 + white2]}
@@ -444,7 +437,8 @@ class Qwixx:
 
     def allowed_combinations(self, roll: dict, player_number: int):
         """
-        Filter the possible combinations of the dice to only the ones that are allowed.
+        Filter the possible combinations of the dice to only the ones that are
+        allowed.
 
         Parameters
         ----------
@@ -456,7 +450,8 @@ class Qwixx:
         Returns
         -------
         list, list
-            The list of the allowed combinations for the white dice and the list of the allowed combinations for the colored dice.
+            The list of the allowed combinations for the white dice and the
+            list of the allowed combinations for the colored dice.
         """
 
         # Filter out the combinations that are not allowed for player_number
@@ -471,13 +466,15 @@ class Qwixx:
 
             else:
                 for i in range(len(value)):
-                    if self.players[player_number].rows[key].is_allowed(value[i]):
+                    if self.players[player_number]\
+                            .rows[key].is_allowed(value[i]):
                         allowed_colored_combinations[key] = (
                             [value[i]]
-                            if not key in allowed_colored_combinations
+                            if key not in allowed_colored_combinations
                             else (
                                 allowed_colored_combinations[key] + [value[i]]
-                                if not value[i] in allowed_colored_combinations[key]
+                                if not value[i] in
+                                allowed_colored_combinations[key]
                                 else allowed_colored_combinations[key]
                             )
                         )
@@ -492,14 +489,14 @@ class Qwixx:
         ----------
         roll : dict
             The dictionary of the rolled dice.
-        
+
         Returns
         -------
         None
         """
 
-        print(f"Color     | Roll(s)")
-        print(f"----------+----------")
+        print("Color     | Roll(s)")
+        print("----------+----------")
         for key, value in roll.items():
             r = key
             r += " " * (10 - len(key)) + "| "
